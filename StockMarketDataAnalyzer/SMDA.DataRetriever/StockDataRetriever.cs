@@ -39,6 +39,36 @@
             Directory.CreateDirectory(outputDirectoryPath);
         }
 
+        public void DownloadAndStoreMarketStockData(string companiesFilePath)
+        {
+            using (connection)
+            {
+                connection.Open();
+
+                using (var sr = new StreamReader(companiesFilePath))
+                {
+                    var companyName = sr.ReadLine();
+
+                    while (companyName != null)
+                    {
+                        companyName = companyName.Trim();
+
+                        SaveAndStoreCompanyDataToDB(companyName, connection);
+
+                        Console.WriteLine("Data about {0} saved to DB.", companyName);
+
+                        companyName = sr.ReadLine();
+                    }
+                }
+            }
+        }
+
+        private void SaveAndStoreCompanyDataToDB(string companyName, SqlConnection connection)
+        {
+            this.DownloadStockData(companyName);
+            this.InserDataToDatabase(companyName, connection);
+        }
+
         private void DownloadStockData(string companyName)
         {
             var today = DateTime.Now;
