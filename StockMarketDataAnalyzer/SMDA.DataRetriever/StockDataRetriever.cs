@@ -17,6 +17,7 @@
             "Integrated Security=true;";
 
         private const string CreateTableFormatString =
+            "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{0}' AND xtype='U')" +
             "CREATE TABLE {0}" +
             "(" +
                 "Date DATE PRIMARY KEY," +
@@ -26,9 +27,19 @@
                 "ClosePrice NUMERIC(18,6)," +
                 "Volume BIGINT," +
                 "AdjClose NUMERIC(18,6)" +
-            ");";
+            ")";
 
-        private const string InsertMarketDataFormatString =
+        private const string InsertOrUpdateMarketDataFormatString =
+            "UPDATE [{0}]" +
+            "SET OpenPrice=@openPrice," +
+                "HighPrice=@highPrice," +
+                "LowPrice=@highPrice," +
+                "ClosePrice=@highPrice," +
+                "Volume=@volume," +
+                "AdjClose=@adjClose " +
+            "WHERE Date=@date " +
+            "" +
+            "IF @@ROWCOUNT = 0 " +
             "INSERT INTO [{0}] " +
             "VALUES (@date, @openPrice, @highPrice, @lowPrice, @closePrice, @volume, @adjClose);";
 
@@ -117,7 +128,7 @@
 
         private static void InsertDataRow(SqlConnection connection, string companyName, DateTime date, decimal openPrice, decimal highPrice, decimal lowPrice, decimal closePrice, long volume, decimal adjClose)
         {
-            SqlCommand insertPriceData = new SqlCommand(String.Format(InsertMarketDataFormatString, companyName), connection);
+            SqlCommand insertPriceData = new SqlCommand(String.Format(InsertOrUpdateMarketDataFormatString, companyName), connection);
 
             insertPriceData.Parameters.AddWithValue("@date", date);
             insertPriceData.Parameters.AddWithValue("@openPrice", openPrice);
