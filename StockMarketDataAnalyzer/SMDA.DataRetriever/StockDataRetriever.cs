@@ -53,5 +53,51 @@
 
             this.webClient.DownloadFile(URL, this.outputDirectoryPath + companyName + ".txt");
         }
+
+        private void InserDataToDatabase(string companyName, SqlConnection connection)
+        {
+            SqlCommand createTable = new SqlCommand(String.Format(CreateTableFormatString, companyName), connection);
+            createTable.ExecuteNonQuery();
+
+            using (var sr = new StreamReader(this.outputDirectoryPath + companyName + ".txt"))
+            {
+                // Skip the first line which contains the column names
+                sr.ReadLine();
+
+                string dataLine = sr.ReadLine();
+
+                while (dataLine != null)
+                {
+                    var dataLineParts = dataLine.Split(',');
+
+                    DateTime date = DateTime.Parse(dataLineParts[0]);
+                    decimal openPrice = decimal.Parse(dataLineParts[1]);
+                    decimal highPrice = decimal.Parse(dataLineParts[2]);
+                    decimal lowPrice = decimal.Parse(dataLineParts[3]);
+                    decimal closePrice = decimal.Parse(dataLineParts[4]);
+                    long volume = long.Parse(dataLineParts[5]);
+                    decimal adjClose = decimal.Parse(dataLineParts[6]);
+
+                    InsertDataRow(connection, companyName, date, openPrice, highPrice, lowPrice, closePrice, volume, adjClose);
+
+                    dataLine = sr.ReadLine();
+                }
+            }
+        }
+
+        private static void InsertDataRow(SqlConnection connection, string companyName, DateTime date, decimal openPrice, decimal highPrice, decimal lowPrice, decimal closePrice, long volume, decimal adjClose)
+        {
+            SqlCommand insertPriceData = new SqlCommand(String.Format(InsertMarketDataFormatString, companyName), connection);
+
+            insertPriceData.Parameters.AddWithValue("@date", date);
+            insertPriceData.Parameters.AddWithValue("@openPrice", openPrice);
+            insertPriceData.Parameters.AddWithValue("@highPrice", highPrice);
+            insertPriceData.Parameters.AddWithValue("@lowPrice", lowPrice);
+            insertPriceData.Parameters.AddWithValue("@closePrice", closePrice);
+            insertPriceData.Parameters.AddWithValue("@volume", volume);
+            insertPriceData.Parameters.AddWithValue("@adjClose", adjClose);
+
+            insertPriceData.ExecuteNonQuery();
+        }
     }
 }
